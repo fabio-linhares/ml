@@ -15,7 +15,8 @@ st.set_page_config(layout="wide", page_title="Construtor de Árvores de Decisão
 
 # --- Importação dos Modelos ---
 from class_id3 import ID3DecisionTree
-# from class_cart import CARTDecisionTree # Próximo passo
+from class_c45 import C45DecisionTree
+from class_cart import CARTDecisionTree
 
 # --- Funções Auxiliares ---
 def preprocess_for_id3(df_features: pd.DataFrame) -> pd.DataFrame:
@@ -35,7 +36,10 @@ def get_model(algorithm):
     """Carrega a classe do modelo com base na seleção."""
     if algorithm == 'ID3':
         return ID3DecisionTree()
-    # Adicione CART aqui depois
+    elif algorithm == 'C4.5':
+        return C45DecisionTree()
+    elif algorithm == 'CART':
+        return CARTDecisionTree()
     return None
 
 def plot_confusion_matrix(y_true, y_pred, class_names):
@@ -61,22 +65,16 @@ with st.sidebar:
     # Se um arquivo for carregado, mostre as outras opções
     if uploaded_file:
         df = pd.read_csv(uploaded_file, encoding='latin1')
-        
-        algorithm = st.selectbox("2. Escolha o algoritmo:", ('ID3', 'CART (em breve)'))
-        
+        algorithm = st.selectbox("2. Escolha o algoritmo:", ('ID3', 'C4.5', 'CART'))
         all_columns = df.columns.tolist()
         target_column = st.selectbox("3. Selecione a coluna Alvo:", all_columns, index=len(all_columns)-1)
-        
         feature_columns = st.multiselect("4. Selecione os Atributos:",
                                          [col for col in all_columns if col != target_column],
                                          default=[col for col in all_columns if col != target_column])
-
         st.header("🔬 Validação")
         test_size = st.slider("5. Percentual para Teste:", 0.1, 0.5, 0.25, 0.05)
-        
         st.header("🔧 Hiperparâmetros")
         max_depth = st.slider("6. Profundidade Máxima da Árvore:", 2, 20, 5)
-
         # O botão de treino agora aciona diretamente a lógica principal
         if st.button("🚀 Treinar e Avaliar Modelo", use_container_width=True, type="primary"):
             st.session_state.run_training = True # Usamos o session_state para "lembrar" do clique

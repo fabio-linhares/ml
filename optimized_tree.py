@@ -221,10 +221,19 @@ class OptimizedDecisionTree:
     """Classe unificada para treinar e usar árvores de decisão otimizadas."""
 
     def __init__(self, algorithm: str = 'cart', max_depth: int = 10):
-        try:
-            self.algorithm_type = AlgorithmType(algorithm.lower())
-        except ValueError:
-            raise ValueError(f"Algoritmo '{algorithm}' não suportado. Use 'id3', 'c45', ou 'cart'.")
+        alg_map = {
+            'id3': AlgorithmType.ID3,
+            'c4.5': AlgorithmType.C45,
+            'c45': AlgorithmType.C45,
+            'cart': AlgorithmType.CART
+        }
+        key = algorithm.strip().lower().replace(".", "")
+        if key in alg_map:
+            self.algorithm_type = alg_map[key]
+        elif algorithm.strip().upper() == 'C4.5':
+            self.algorithm_type = AlgorithmType.C45
+        else:
+            raise ValueError(f"Algoritmo '{algorithm}' não suportado. Use 'ID3', 'C4.5' ou 'CART'.")
         self.max_depth = max_depth
         self.memo_table = AdvancedMemoizationTable()
         self.tree_builder = OptimizedTreeBuilder(self.algorithm_type, self.memo_table)
