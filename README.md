@@ -221,7 +221,7 @@ A primeira questão da lista de exercícios solicitava que, a partir de uma base
   (N)    (A)
    |      |
   [A]    [M]
-```
+
 
 Legenda: R=Ruim, D=Desconhecida, B=Boa, N=Nenhuma, A=Adequada  
     A=Alto, M=Moderado
@@ -253,7 +253,6 @@ Legenda: R=Ruim, D=Desconhecida, B=Boa, N=Nenhuma, A=Adequada
           Sim                      Nao
            |                        |
              [ Alto ]                [ Moderado ]
-```
 ```
 
 ### Regras extraídas
