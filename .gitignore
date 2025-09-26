@@ -84,7 +84,7 @@ Thumbs.db
 *.dot
 
 # Sodeusnacausa (prints, fotos)
-sodeusnacausa/
+#sodeusnacausa/
 
 # Ignore secrets
 secrets.*
