@@ -378,21 +378,21 @@ A tabela abaixo resume o desempenho de cada modelo no conjunto de teste:
 
 As matrizes de confusão detalham os acertos e erros de cada modelo por classe.
 
-<div style="display: flex; justify-content: center; gap: 32px; align-items: flex-start;">
+<div style="display: flex; justify-content: center; gap: 32px; align-items: flex-start;" align="center">
 
 <div style="text-align: center;">
   <strong>ID3</strong><br>
-  <img src="resultados_img/matriz_confusao_id3.png" alt="Matriz de Confusão ID3" width="320"/>
+  <img src="resultados_img/matriz_confusao_id3.png" alt="Matriz de Confusão ID3" width="620"/>
 </div>
 
 <div style="text-align: center;">
   <strong>C4.5</strong><br>
-  <img src="resultados_img/matriz_confusao_c4.5.png" alt="Matriz de Confusão C4.5" width="320"/>
+  <img src="resultados_img/matriz_confusao_c4.5.png" alt="Matriz de Confusão C4.5" width="620"/>
 </div>
 
 <div style="text-align: center;">
   <strong>CART</strong><br>
-  <img src="resultados_img/matriz_confusao_cart.png" alt="Matriz de Confusão CART" width="320"/>
+  <img src="resultados_img/matriz_confusao_cart.png" alt="Matriz de Confusão CART" width="620"/>
 </div>
 
 </div>
@@ -410,21 +410,21 @@ As matrizes de confusão detalham os acertos e erros de cada modelo por classe.
 #### Visualização das Árvores de Decisão
 
 
-<div style="display: flex; justify-content: center; gap: 32px; align-items: flex-start;">
+<div style="display: flex; justify-content: center; gap: 32px; align-items: flex-start;" align="center">
 
 <div style="text-align: center;">
   <strong>ID3</strong><br>
-  <img src="resultados_img/id3.PNG" alt="Árvore de Decisão ID3" width="380"/>
+  <img src="resultados_img/id3.PNG" alt="Árvore de Decisão ID3" width="680"/>
 </div>
 
 <div style="text-align: center;">
   <strong>C4.5</strong><br>
-  <img src="resultados_img/c45.PNG" alt="Árvore de Decisão C4.5" width="380"/>
+  <img src="resultados_img/c45.PNG" alt="Árvore de Decisão C4.5" width="680"/>
 </div>
 
 <div style="text-align: center;">
   <strong>CART</strong><br>
-  <img src="resultados_img/cart.PNG" alt="Árvore de Decisão CART" width="380"/>
+  <img src="resultados_img/cart.PNG" alt="Árvore de Decisão CART" width="680"/>
 </div>
 
 </div>
