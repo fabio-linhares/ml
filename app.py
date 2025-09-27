@@ -95,11 +95,13 @@ with st.sidebar:
                 st.session_state.feature_columns = feature_columns
                 st.session_state.test_size = test_size
                 st.session_state.max_depth = max_depth
+                st.session_state.model_is_trained = False # Reset flag
 
     elif analysis_type == 'Análise de Doenças Cardíacas (Questão 3)':
         st.info("Esta análise usa o dataset 'Heart Disease UCI'. Certifique-se de que o arquivo `heart.csv` está no diretório do projeto.")
         if st.button("🔍 Executar Análise (RIPPER)", use_container_width=True, type="primary"):
             st.session_state.run_training = 'ripper'
+            st.session_state.model_is_trained = False # Reseta a outra análise
 
 # --- Lógica para Árvores de Decisão ---
 if st.session_state.get('run_training') == 'tree':
@@ -116,6 +118,9 @@ if st.session_state.get('run_training') == 'tree':
         X_raw = df[feature_columns]
         y_raw = df[target_column]
 
+        # Armazena uma cópia dos dados brutos para o formulário de inferência
+        st.session_state.df_for_inference = df.copy()
+
         X_processed = preprocess_for_id3(X_raw) if algorithm == 'ID3' else X_raw
 
         X_train, X_test, y_train, y_test = train_test_split(X_processed, y_raw, test_size=test_size, random_state=42, stratify=y_raw)
@@ -126,11 +131,39 @@ if st.session_state.get('run_training') == 'tree':
         with st.spinner(f"Treinando modelo {algorithm}..."):
             model.fit(X_train, y_train)
         
-        st.success("Modelo treinado e avaliado com sucesso!")
-        st.header("📈 Resultados da Avaliação (Árvore de Decisão)")
+        st.success("Modelo treinado com sucesso!")
+        
+        # --- Persiste o modelo e os dados para as outras abas ---
+        st.session_state.trained_model = model
+        st.session_state.y_test = y_test
+        st.session_state.y_pred = model.predict(X_test)
+        st.session_state.class_names = sorted(y_raw.unique())
+        st.session_state.algorithm_in_use = algorithm # Armazena o algoritmo usado
+        
+        # Armazena informações sobre as colunas de treino para o formulário dinâmico
+        st.session_state.X_train_info = {
+            'columns': X_train.columns.tolist(),
+            'dtypes': X_train.dtypes.to_dict(),
+            'unique_vals': {
+                col: X_train[col].unique().tolist() 
+                for col in X_train.select_dtypes(include=['object', 'category']).columns
+            }
+        }
+        
+        st.session_state.run_training = None # Limpa a flag de execução
+        st.session_state.model_is_trained = True # Ativa a flag para mostrar os resultados/inferência
 
-        y_pred = model.predict(X_test)
-        class_names = sorted(y_raw.unique())
+# --- Área de Exibição para o Modelo Treinado (Avaliação e Inferência) ---
+if st.session_state.get('model_is_trained'):
+    st.header("📊 Resultados e Inferência do Modelo")
+
+    tab1, tab2 = st.tabs(["Resultados da Avaliação", "🔮 Classificar Novo Dado"])
+
+    with tab1:
+        st.subheader("Métricas de Desempenho")
+        y_test = st.session_state.y_test
+        y_pred = st.session_state.y_pred
+        class_names = st.session_state.class_names
         
         accuracy = accuracy_score(y_test, y_pred)
         
@@ -145,16 +178,59 @@ if st.session_state.get('run_training') == 'tree':
             fig_cm = plot_confusion_matrix(y_test, y_pred, class_names)
             st.pyplot(fig_cm)
             
-        st.write("**Visualização da Árvore de Decisão**")
+        st.subheader("Visualização da Árvore de Decisão")
         try:
             dot = graphviz.Digraph(comment='Decision Tree', graph_attr={'rankdir': 'TB'})
-            model.model._get_tree_graph(dot, model.get_tree_structure(), class_names=class_names)
+            st.session_state.trained_model.model._get_tree_graph(dot, st.session_state.trained_model.get_tree_structure(), class_names=class_names)
             st.graphviz_chart(dot)
         except Exception as e:
             st.error(f"Não foi possível gerar o gráfico da árvore: {e}")
-            st.json(model.get_tree_structure())
+            st.json(st.session_state.trained_model.get_tree_structure())
+
+    with tab2:
+        st.subheader("Formulário de Classificação")
+        st.write("Preencha os valores abaixo para obter uma classificação do modelo treinado.")
         
-    st.session_state.run_training = None
+        input_data = {}
+        with st.form(key='inference_form'):
+            cols = st.columns(3)
+            i = 0
+            for col_name in st.session_state.X_train_info['columns']:
+                current_col = cols[i % 3]
+                dtype = st.session_state.X_train_info['dtypes'][col_name]
+                
+                df_raw_for_form = st.session_state.df_for_inference
+                
+                if pd.api.types.is_object_dtype(dtype) or pd.api.types.is_categorical_dtype(dtype):
+                    unique_vals = st.session_state.X_train_info['unique_vals'][col_name]
+                    input_data[col_name] = current_col.selectbox(f"**{col_name}**:", options=unique_vals, key=f"inf_{col_name}")
+                elif pd.api.types.is_numeric_dtype(dtype):
+                    min_val = float(df_raw_for_form[col_name].min())
+                    max_val = float(df_raw_for_form[col_name].max())
+                    mean_val = float(df_raw_for_form[col_name].mean())
+                    input_data[col_name] = current_col.number_input(f"**{col_name}**:", min_value=min_val, max_value=max_val, value=mean_val, key=f"inf_{col_name}")
+                i += 1
+            
+            submit_button = st.form_submit_button(label='Classificar')
+
+        if submit_button:
+            input_df = pd.DataFrame([input_data])
+            input_df = input_df[st.session_state.X_train_info['columns']] # Garante a ordem das colunas
+
+            # Pré-processa se o modelo for ID3
+            if st.session_state.algorithm_in_use == 'ID3':
+                st.write("Aplicando discretização para o modelo ID3...")
+                input_df_processed = preprocess_for_id3(input_df)
+            else:
+                input_df_processed = input_df
+
+            with st.spinner("Classificando..."):
+                prediction = st.session_state.trained_model.predict(input_df_processed)
+            
+            st.success(f"## A classe prevista é: **{prediction[0]}**")
+            st.write("---")
+            st.write("**Valores Inseridos:**")
+            st.dataframe(input_df)
 
 # --- Lógica para Análise de Doenças Cardíacas (RIPPER) ---
 if st.session_state.get('run_training') == 'ripper':
