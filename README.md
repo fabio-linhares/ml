@@ -57,11 +57,11 @@
 .
 ├── sodeusnacausa/      # Prints/screenshots com os cálculos manuais no caderno (Questão 1)
 ├── app.py              # Aplicação web mínima para interação
-├── class_cart.py       # Implementação didática do CART
-├── class_c45.py        # Implementação didática do C4.5
-├── class_id3.py        # Implementação didática do ID3
+├── class_cart.py       # Classe wrapper para o algoritmo CART (usa o motor otimizado)
+├── class_c45.py        # Classe wrapper para o algoritmo C4.5 (usa o motor otimizado)
+├── class_id3.py        # Classe wrapper para o algoritmo ID3 (usa o motor otimizado)
 ├── clientes.csv        # Base de dados expandida (30 instâncias) — fonte principal
-├── optimized_tree.py   # Implementação usando scikit-learn + exportação de regras
+├── optimized_tree.py   # Núcleo otimizado e unificado que implementa a lógica para ID3, C4.5 e CART
 ├── requirements.txt    # Dependências do projeto
 └── README.md           # Este arquivo
 ```
@@ -300,37 +300,118 @@ A base de regras do CART é a mais concisa (4 regras) e possui estrutura binári
 
 ## Questão 2 — Implementação com bibliotecas (Scikit-learn) e código próprio
 
-### Arquivos relevantes
+### Arquitetura do Código
 
-* `class_id3.py`, `class_c45.py`, `class_cart.py` — implementações, digamos, customizadas, já que diferem um pouco do clássico.
-* `optimized_tree.py` — criado para abordar limitações observadas nas implementações didáticas dos algoritmos de árvore de decisão (ID3, C4.5, CART), especialmente em relação à eficiência, robustez e clareza das regras extraídas. Com o `scikit-learn`, buscamos aproveitar algoritmos otimizados, controles de complexidade (como profundidade máxima e número mínimo de amostras por nó) e métodos de exportação de regras mais legíveis. Um ponto importante foi evitar problemas de recursão excessiva ou loops infinitos, comuns em implementações manuais, especialmente quando os critérios de parada não são bem definidos ou quando há dados inconsistentes. O script também facilita a comparação entre árvores geradas automaticamente e as construídas manualmente, permitindo avaliar ganhos em desempenho, interpretabilidade e generalização.
+A implementação foi refatorada para uma arquitetura mais robusta e modular:
 
-### Pré-processamento padrão
+*   **`optimized_tree.py`**: Atua como o **cérebro** do sistema. Contém a classe `OptimizedDecisionTree`, que implementa toda a lógica de construção de árvores, incluindo os cálculos de métricas (Entropia, Gini, Gain Ratio), divisões de dados (categóricos e contínuos) e a estrutura da árvore. Ele é projetado para ser configurável e atender aos requisitos específicos de cada algoritmo (ID3, C4.5 e CART).
+*   **`class_id3.py`, `class_c45.py`, `class_cart.py`**: Funcionam como **wrappers** ou "fachadas". Cada classe simplesmente instancia o motor `OptimizedDecisionTree` com a configuração correta (`algorithm='id3'`, `'c45'` ou `'cart'`). Isso elimina a duplicação de código e centraliza a lógica de decisão em um único local, facilitando a manutenção e a comparação.
 
-* Conversão de variáveis categóricas → **Label Encoding** (para demonstrar comportamento do `DecisionTreeClassifier`).
-* Normalmente, para interpretabilidade, recomenda-se `OneHotEncoder` em alguns casos; aqui usamos LabelEncoding para manter coerência com os exemplos didáticos.
+### Análise das Divergências: Manual vs. Código
 
-### Exemplo de saída (criterio `gini`)
+Ao comparar as árvores geradas manualmente na questão anterior com as produzidas  nessa implementação é possível notar divergências. Essas diferenças não indicam um erro, mas sim destacam a natureza da implementação computacional em contraste com a abordagem manual. As principais razões para isso são:
 
-**Acurácia no conjunto de treino:** `93.33%`
-**Regras (`export_text`) — exemplo**
+1.  **Precisão e Critérios de Desempate:** Os cálculos manuais frequentemente envolvem arredondamentos. O código, por outro lado, trabalha com a precisão total de ponto flutuante. Uma diferença mínima no ganho de informação ou no índice Gini, invisível manualmente, pode levar o algoritmo a escolher um atributo diferente. Além disso, em caso de empate, o código seguirá uma lógica determinística (ex: escolher o primeiro atributo da lista), enquanto a escolha manual pode ser arbitrária.
 
-```text
-|--- Renda <= 1.50
-|   |--- Historia de Crédito <= 0.50
-|   |   |--- class: Moderado
-|   |--- Historia de Crédito > 0.50
-|   |   |--- class: Alto
-|--- Renda > 1.50
-|   |--- class: Baixo
-```
+2.  **Tratamento Exaustivo dos Atributos:**
+    *   **Atributos Contínuos (C4.5/CART):** O código testa sistematicamente todos os pontos de corte possíveis entre valores únicos e ordenados para encontrar o limiar que maximiza a métrica de divisão. Manualmente, é impraticável realizar essa busca exaustiva.
+    *   **Atributos Categóricos (CART):** Para criar uma divisão binária, o algoritmo testa todas as combinações de "um valor vs. o resto", garantindo a escolha ótima, algo que pode passar despercebido na análise manual.
 
-*(os limiares como `0.50` e `1.50` provêm do Label Encoding; mapeamentos estão no script)*
+3.  **Impacto de Hiperparâmetros e Generalização:** A implementação em código utiliza hiperparâmetros como `max_depth` para controlar a complexidade da árvore. Isso é uma técnica fundamental para evitar o *overfitting* (sobreajuste), resultando em árvores potencialmente menores e com maior poder de generalização. As árvores manuais, especialmente a do ID3, foram construídas até a pureza total dos ramos, criando regras muito específicas que podem não performar bem com dados novos.
+
+Em suma, a árvore gerada pelo código é o resultado de um processo mais rigoroso, reproduzível e alinhado com as boas práticas de aprendizado de máquina, que priorizam a generalização em detrimento do ajuste perfeito aos dados de treino.
+
+### Resultados de Desempenho (Treinamento)
+
+O sistema de memoização (`AdvancedMemoizationTable`) implementado em `optimized_tree.py` armazena em cache os resultados de cálculos repetitivos (como Entropia e Gini para o mesmo subconjunto de dados). Isso acelera significativamente o treinamento, especialmente em árvores mais profundas.
+
+Abaixo estão os resultados de uma execução típica, mostrando o tempo de treinamento e a eficiência do cache:
+
+| Algoritmo | Tempo de Treinamento | Taxa de Acerto do Cache |
+| :-------- | :------------------- | :---------------------- |
+| **ID3**   | ~0.275s              | ~42.7%                  |
+| **C4.5**  | ~0.223s              | ~63.0%                  |
+| **CART**  | ~0.299s              | ~67.4%                  |
+
+*Observação: Os tempos podem variar ligeiramente a cada execução. A alta taxa de acerto do cache, especialmente para C4.5 e CART, demonstra a eficácia da otimização, pois muitos nós da árvore avaliam os mesmos subconjuntos de dados repetidamente.*
 
 ### Observações técnicas
 
-* `scikit-learn` produz árvores binárias por padrão (CART) e faz otimizações que reduzem overfitting aparente (ex.: parâmetros `min_samples_split`, `max_depth`, etc.).
-* Implementações “do zero”, como estas, são pedagógicas e não substituem `sklearn` em produção, mas são excelentes para entender os processos, os conceitos fundamentais como ganho, entropia, Gini, seleção de corte contínuo, etc.
+*   `scikit-learn` produz árvores binárias por padrão (CART) e faz otimizações que reduzem overfitting aparente (ex.: parâmetros `min_samples_split`, `max_depth`, etc.).
+*   Nossa implementação agora reflete essa sofisticação, com um motor central que lida com as nuances de cada algoritmo, tornando a comparação mais direta e o código mais limpo.
+
+### Avaliação dos Modelos e Análise de Resultados
+
+Para avaliar o desempenho de cada algoritmo, dividimos o dataset em 70% para treino e 30% para teste. O script `evaluate_models.py` foi executado para treinar os modelos e gerar as métricas e visualizações a seguir.
+
+#### Métricas de Desempenho Comparativas
+
+A tabela abaixo resume o desempenho de cada modelo no conjunto de teste:
+
+| Métrica         | ID3     | C4.5    | CART    |
+| :-------------- | :------ | :------ | :------ |
+| **Acurácia**    | 77.78%  | 77.78%  | 77.78%  |
+| **Precisão**    | 0.80    | 0.61    | 0.80    |
+| **Recall**      | 0.78    | 0.78    | 0.78    |
+| **F1-Score**    | 0.77    | 0.68    | 0.77    |
+
+*Nota: Precisão, Recall e F1-Score são médias ponderadas.*
+
+#### Matrizes de Confusão
+
+As matrizes de confusão detalham os acertos e erros de cada modelo por classe.
+
+<div style="display: flex; justify-content: center; gap: 32px; align-items: flex-start;">
+
+<div style="text-align: center;">
+  <strong>ID3</strong><br>
+  <img src="resultados_img/matriz_confusao_id3.png" alt="Matriz de Confusão ID3" width="320"/>
+</div>
+
+<div style="text-align: center;">
+  <strong>C4.5</strong><br>
+  <img src="resultados_img/matriz_confusao_c4.5.png" alt="Matriz de Confusão C4.5" width="320"/>
+</div>
+
+<div style="text-align: center;">
+  <strong>CART</strong><br>
+  <img src="resultados_img/matriz_confusao_cart.png" alt="Matriz de Confusão CART" width="320"/>
+</div>
+
+</div>
+
+#### Análise das Matrizes
+
+1.  **Acurácia Geral:** Todos os três modelos alcançaram a mesma acurácia de **77.78%** no conjunto de teste, acertando 7 das 9 instâncias. Isso sugere que, para este dataset e com a profundidade de árvore limitada (`max_depth=5`), o poder preditivo dos três algoritmos é bastante similar.
+
+2.  **Desempenho do ID3 e CART:** Os modelos ID3 e CART apresentaram um comportamento idêntico, conforme suas matrizes de confusão. Ambos classificaram perfeitamente a classe `Baixo` Risco (4/4 acertos). No entanto, tiveram dificuldade com as outras classes: erraram 1 das 3 instâncias de `Alto` Risco (classificando-a como `Baixo`) e 1 das 2 de `Moderado` Risco (classificando-a como `Alto`). Isso resultou em uma precisão mais baixa para a classe `Moderado` (50%).
+
+3.  **Desempenho do C4.5:** O modelo C4.5 se destacou por classificar perfeitamente tanto a classe `Alto` (3/3) quanto a `Baixo` (4/4). Seu ponto fraco foi a classe `Moderado`, que ele **não conseguiu identificar corretamente nenhuma vez**, classificando as duas instâncias como `Alto`. Isso explica por que sua precisão geral ponderada (0.61) é significativamente menor que a dos outros modelos, apesar da mesma acurácia. O C4.5, neste caso, criou regras que generalizaram demais a classe `Moderado`, absorvendo-a na `Alto`.
+
+**Conclusão da Análise:** Embora a acurácia seja a mesma, os modelos **ID3 e CART** mostram um comportamento mais equilibrado, sendo capazes de identificar, ainda que com alguns erros, todas as três classes. O **C4.5** demonstrou uma tendência a "ignorar" a classe minoritária (`Moderado`) em favor das outras, o que pode ser um comportamento indesejado em problemas onde a detecção de todas as classes é crítica.
+
+#### Visualização das Árvores de Decisão
+
+
+<div style="display: flex; justify-content: center; gap: 32px; align-items: flex-start;">
+
+<div style="text-align: center;">
+  <strong>ID3</strong><br>
+  <img src="resultados_img/id3.PNG" alt="Árvore de Decisão ID3" width="380"/>
+</div>
+
+<div style="text-align: center;">
+  <strong>C4.5</strong><br>
+  <img src="resultados_img/c45.PNG" alt="Árvore de Decisão C4.5" width="380"/>
+</div>
+
+<div style="text-align: center;">
+  <strong>CART</strong><br>
+  <img src="resultados_img/cart.PNG" alt="Árvore de Decisão CART" width="380"/>
+</div>
+
+</div>
+
 
 ---
 
