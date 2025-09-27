@@ -20,10 +20,10 @@ kiwisolver==1.4.9
 MarkupSafe==3.0.2
 matplotlib==3.10.6
 mkl-service==2.4.0
-mkl_fft @ file:///io/mkl313/mkl_fft_1730824109137/work
-mkl_random @ file:///io/mkl313/mkl_random_1730823916628/work
+mkl_fft
+mkl_random
 narwhals==2.5.0
-numpy @ file:///croot/numpy_and_numpy_base_1725470312869/work/dist/numpy-2.0.1-cp312-cp312-linux_x86_64.whl#sha256=e2374991344fa2241a2153ef3d550d3a1cd2d50cb1f1d51eddc82870abc88021
+numpy
 packaging==25.0
 pandas==2.3.2
 pillow==11.3.0
@@ -52,3 +52,4 @@ tzdata==2025.2
 urllib3==2.5.0
 watchdog==6.0.0
 wheel==0.45.1
+wittgenstein==0.3.4

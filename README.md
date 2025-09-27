@@ -1,4 +1,3 @@
-
 <p align="center">
   <img src="https://ufal.br/ufal/comunicacao/identidade-visual/brasao/ods/ufal_ods1.png" alt="Logo UFAL" width="320"/>
 </p>
@@ -20,6 +19,12 @@
 <p align="center">
   <b>Autor:</b> Fábio Linhares<br>
   <b>Lattes:</b> <a href="http://lattes.cnpq.br/7908261028551208">http://lattes.cnpq.br/7908261028551208</a>
+</p>
+
+<p align="center">
+  <a href="https://tutu.zerocopia.com.br/" target="_blank">
+    <img src="https://img.shields.io/badge/Acessar%20Aplicação-Streamlit-FF4B4B?style=for-the-badge&logo=streamlit" alt="Streamlit App">
+  </a>
 </p>
 
 <p align="center">
@@ -55,15 +60,27 @@
 
 ```
 .
-├── sodeusnacausa/      # Prints/screenshots com os cálculos manuais no caderno (Questão 1)
-├── app.py              # Aplicação web mínima para interação
-├── class_cart.py       # Classe wrapper para o algoritmo CART (usa o motor otimizado)
-├── class_c45.py        # Classe wrapper para o algoritmo C4.5 (usa o motor otimizado)
-├── class_id3.py        # Classe wrapper para o algoritmo ID3 (usa o motor otimizado)
-├── clientes.csv        # Base de dados expandida (30 instâncias) — fonte principal
-├── optimized_tree.py   # Núcleo otimizado e unificado que implementa a lógica para ID3, C4.5 e CART
-├── requirements.txt    # Dependências do projeto
-└── README.md           # Este arquivo
+├── app.py                     # Aplicação web interativa com Streamlit
+├── backup/                    # Arquivos de backup de versões anteriores
+├── class_cart.py              # Classe wrapper para o algoritmo CART
+├── class_c45.py               # Classe wrapper para o algoritmo C4.5
+├── class_id3.py               # Classe wrapper para o algoritmo ID3
+├── clientes.csv               # Base de dados expandida (30 instâncias) - Questão 1
+├── download_heart_dataset.py  # Script para baixar o dataset da Questão 3
+├── evaluate_models.py         # Script para avaliação dos modelos (métricas e matrizes)
+├── heart_disease_ripper.py    # Implementação da análise com RIPPER (Questão 3)
+├── knn_classifier.py          # Implementação do classificador kNN (Questão 6)
+├── optimized_tree.py          # Núcleo otimizado que implementa a lógica das árvores
+├── README.md                  # Este arquivo de documentação
+├── requirements.txt           # Dependências do projeto
+├── resultados_img/            # Imagens das matrizes de confusão e das árvores de decisão
+│   ├── c45.PNG
+│   ├── cart.PNG
+│   ├── id3.PNG
+│   ├── matriz_confusao_c4.5.png
+│   ├── matriz_confusao_cart.png
+│   └── matriz_confusao_id3.png
+└── sodeusnacausa/             # Screenshots com os cálculos manuais (Questão 1)
 ```
 
 ---
@@ -208,7 +225,7 @@ A primeira questão da lista de exercícios solicitava que, a partir de uma base
 **ID3**
 
 ```
-  [ Renda ]
+      [ Renda ]
      /    |    \
  ($0-$15k) ($15-$35k) (> $35k)
     |         |          \
@@ -218,13 +235,12 @@ A primeira questão da lista de exercícios solicitava que, a partir de uma base
  |   |    |     |   |   |
 [A] [A] [Garantia] [A] [M] [M]
     /    \
-  (N)    (A)
+  (N)    (AD)
    |      |
   [A]    [M]
 
 
-Legenda: R=Ruim, D=Desconhecida, B=Boa, N=Nenhuma, A=Adequada  
-    A=Alto, M=Moderado
+Legenda: R=Ruim, D=Desconhecida, B=Boa, N=Nenhuma, AD=Adequada, A=Alto, M=Moderado
 ```
 
 **C4.5** (semelhante ao ID3, mas com cortes contínuos)
@@ -415,51 +431,26 @@ As matrizes de confusão detalham os acertos e erros de cada modelo por classe.
 
 ---
 
-## Questão 3 — Dataset do Kaggle (Heart Disease UCI) e regras diretas (RIPPER)
+## Questão 3 — Dataset do Kaggle (Heart Disease) e regras diretas (RIPPER)
 
 ### Dataset escolhido
 
-* **Heart Disease UCI** — conjunto clássico, alvo binário (`target`), mistura de variáveis contínuas e categóricas. (Ex.: `cp`, `thal`, `ca`, `exang`, etc.)
+* **Heart Disease UCI** — conjunto clássico, alvo binário (`target`), mistura de variáveis contínuas e categóricas.
 
-### Procedimento
+### Procedimento e Implementação
 
-1. Baixar dataset (Kaggle).
-2. Pré-processar (tratamento de nulos, normalização/encoding conforme necessário).
-3. Treinar árvore de decisão (`scikit-learn`) e gerar métricas (80/20 train/test).
-4. Treinar JRip / RIPPER (via `wittgenstein`) para gerar regras diretamente.
+Para resolver a dependência do dataset, foi criado o script `download_heart_dataset.py`. Ao ser executado, ele baixa o conjunto de dados "Heart Disease UCI" do repositório OpenML ou, em caso de falha, gera um dataset sintético com características similares, salvando o resultado como `heart.csv`.
 
-### Resultados (resumo)
+A análise dos algoritmos foi integrada diretamente na aplicação web (`app.py`):
 
-* **Acurácia (80/20):** `85.25%`
-* **Matriz de confusão:**
+1.  Na barra lateral, selecione a opção **"Análise de Doenças Cardíacas (Questão 3)"**.
+2.  Ao clicar no botão para executar, a aplicação carrega o `heart.csv`.
+3.  Um modelo de Árvore de Decisão (usando Scikit-learn) e um modelo **RIPPER** (usando a biblioteca `wittgenstein`) são treinados e avaliados.
+4.  Os resultados, incluindo acurácia, relatório de classificação e o conjunto de regras gerado pelo RIPPER, são exibidos lado a lado para comparação.
 
-  ```
-  Prev.0 | Prev.1
-  Real 0 | 24 | 5
-  Real 1 |  4 | 28
-  ```
-* **Relatório de classificação:**
+### Resultados e Análise
 
-  ```
-  Classe 0 — precision 0.86 | recall 0.83 | f1 0.84 | support 29
-  Classe 1 — precision 0.85 | recall 0.88 | f1 0.86 | support 32
-  accuracy = 0.85 (n=61)
-  ```
-* **Regras (RIPPER simplificado):**
-
-  ```
-  IF (cp = 0) AND (ca = 0) THEN target = 0
-  IF (thal = 2) AND (exang = 0) THEN target = 0
-  IF (ca = 0) AND (slope = 1) THEN target = 0
-  ELSE target = 1
-  ```
-
-  *(regras simplificadas para apresentação aqui (cansado de escrever...) Veja `optimized_tree.py` ou execute a aplicação para visualizar os dados completo)*
-
-### Observação comparativa
-
-* Árvores: cobrem o espaço completo (mapeamento exaustivo, mutuamente exclusivo).
-* RIPPER/JRip: produz uma lista ordenada de regras — a primeira aplicável determina o rótulo; tendem a ser curtas e focadas.
+A aplicação apresenta de forma interativa os resultados da Árvore de Decisão e do RIPPER. O principal destaque é a exibição dinâmica do conjunto de regras gerado pelo RIPPER, que permite uma análise direta de sua simplicidade e interpretabilidade. Em geral, as regras do RIPPER são mais concisas e fáceis de entender do que a estrutura completa de uma árvore de decisão, ilustrando a principal vantagem dos algoritmos de extração de regras.
 
 ---
 
@@ -483,7 +474,15 @@ As matrizes de confusão detalham os acertos e erros de cada modelo por classe.
 
 * **Critérios de parada / mínimos:** evita divisões em nós com poucos exemplos (reduz regras espúrias).
 
-Ao fim e ao cabo, essas características parecem tornar o C4.5 (e variantes) robusto para uso didático e em casos onde controle de overfitting é necessário, sem sacrificar interpretabilidade.
+### Demonstração Prática com kNN
+
+Para além da discussão teórica, foi implementada uma análise prática na aplicação web (`app.py`) para visualizar os fenômenos de overfitting e underfitting. Na seção expansível **"🔬 Análise de Overfitting/Underfitting com kNN"**, é possível executar o algoritmo kNN no dataset de doenças cardíacas com uma faixa de valores para o hiperparâmetro *k*.
+
+A aplicação gera um gráfico interativo que plota a acurácia do modelo em função de *k*. Este gráfico demonstra empiricamente que:
+
+*   **Valores de *k* muito baixos** (e.g., k=1) tendem a ter uma acurácia volátil e podem se ajustar demais aos ruídos dos dados de treino (**overfitting**).
+*   **Valores de *k* muito altos** suavizam demais a fronteira de decisão, fazendo o modelo perder a capacidade de capturar a complexidade dos dados e resultando em queda de performance (**underfitting**).
+*   O valor ótimo de *k*, que maximiza a acurácia no conjunto de teste, representa o melhor equilíbrio (bias-variance tradeoff) para este dataset.
 
 ---
 
@@ -546,11 +545,16 @@ Exemplo Gower (Renda em R\$):
 * **kNN:** *lazy* — quase nenhum treino, custo na predição.
 * **Árvores/SVM:** *eager* — treino caro, predição rápida.
 
+### Implementação e Análise Prática
+
+A implementação prática deste algoritmo foi realizada em `knn_classifier.py` e integrada à aplicação principal de duas formas distintas:
+
+1.  Um **exemplo didático** na seção "Explorador k-Nearest Neighbors", que permite classificar um único ponto novo em um dataset 2D, visualizando os vizinhos mais próximos.
+2.  Uma **análise de sensibilidade do hiperparâmetro *k***, conforme descrito na seção anterior (Questões 4 & 5), que utiliza o dataset de doenças cardíacas para uma exploração mais robusta do comportamento do algoritmo e para demonstrar visualmente os conceitos de overfitting e underfitting.
+
 ---
 
 ## Reprodutibilidade, limitações e notas metodológicas
 
 * **Cálculos manuais:** realizados em papel; os scans/fotos estão em `sodeusnacausa/`. 
 * **Pré-processamento:** LabelEncoding foi usado para simplicidade didática. Em aplicações reais, possivelmente utilizaríamos `OneHotEncoding` e normalização, que é importante.
-
-</div>  
