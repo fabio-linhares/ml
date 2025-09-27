@@ -66,6 +66,7 @@
 ├── class_c45.py               # Classe wrapper para o algoritmo C4.5
 ├── class_id3.py               # Classe wrapper para o algoritmo ID3
 ├── clientes.csv               # Base de dados expandida (30 instâncias) - Questão 1
+├── heart.csv                  # Base de dados do Kaggle - Questão 3
 ├── download_heart_dataset.py  # Script para baixar o dataset da Questão 3
 ├── evaluate_models.py         # Script para avaliação dos modelos (métricas e matrizes)
 ├── heart_disease_ripper.py    # Implementação da análise com RIPPER (Questão 3)
